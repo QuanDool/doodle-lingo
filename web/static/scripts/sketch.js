@@ -4,10 +4,10 @@ const STROKE_WEIGHT = 3;
 const CROP_PADDING = (REPOS_PADDING = 2);
 const COLOR = "#ffffff"
 
-let english = ["moon","star","bucket","cup","door","moustache","mountain","stairs","tornado","potato","table","chair"];
-let level = [0,0,0,0,0,0,0,0,0,0,0,0];
+let english = ["moon","star","apple","cup","door","moustache","mountain","stairs","tornado","potato","table","chair", "rainbow", "light bulb", "bracelet"];
+let level = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 let english_word = "";
-let spanish = ["la luna","la estrella","el cubo","la taza","la puerta","el bigote","la montaña","las escalera","el tornado","la papa","la mesa","la silla"];
+let spanish = ["la luna","la estrella","la manzana","la taza","la puerta","el bigote","la montaña","las escalera","el tornado","la papa","la mesa","la silla", "el arco iris", "la bombilla", "la pulsera"];
 let spanish_word = "";
 let word_index = 0;
 let mastery = 0;
@@ -355,7 +355,7 @@ const setWords = () => {
 	const $unknownword = document.getElementById("unknownword");
 	$unknownword.innerHTML = spanish_word;
 	const $mastery = document.getElementById("mastery");
-	$mastery.innerHTML = "Mastered: " + mastery + "/10";
+	$mastery.innerHTML = "Mastered: " + mastery + "/15";
 }
 
 const renderCanvas = () => {
