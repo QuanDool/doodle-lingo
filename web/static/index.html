@@ -1,8 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <style>
+      body {overflow-y: hidden;}
+    </style>
+
     <meta charset="UTF-8" />
-    <title>Quick, Draw! Webapp</title>
+    <title>DrawLearn</title>
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, user-scalable=no"
@@ -18,40 +22,35 @@
   </head>
 
   <body>
-    <div class="container p-2">
-      <!-- As a heading -->
-      <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <span class="navbar-brand mb-0 h1">Quick, Draw! Webapp</span>
-        <div class="collapse navbar-collapse">
-          <ul class="navbar-nav ml-auto">
-            <li class="nav-item">
-              <a
-                class="nav-link"
-                href="https://github.com/larswaechter/quickdraw-cnn"
-                target="_blank"
-                >GitHub</a
-              >
-            </li>
-          </ul>
-        </div>
-      </nav>
-
+    <div class="container row p-2">
+        <h1 class="col-auto text-center text-primary bg-light-50 rounded knownword" id="knownword">english</h1>
+        <h1 class="col-auto text-center text-warning rounded unknownword" id="unknownword">spanish</h1>
       <div class="content py-3">
-        <div class="row">
-          <div class="col-12 col-md-auto">
+        <div class="container-a">
+          <div class="col-md-auto">
             <main></main>
-            <div class="buttons-container">
-              <button
-                class="btn btn-primary btn-block"
-                id="predict"
-                type="button"
-              >
-                Predict
+            <div class="buttons-container d-flex justify-content-center">
+              <button class="btn btn-light" id="undo">
+                ↶ Undo
+                </button>
+              <button class="btn btn-light" id="skip">
+                > Skip
+                </button>
+              <button class="btn btn-light" id="hint">
+              ? Hint
               </button>
-              <button class="btn btn-light btn-block" id="clear">Clear</button>
+              <button class="btn btn-light" id="clear">X Clear</button>
             </div>
           </div>
-          <div class="col-12 col-md-auto">
+          <div class="container row p-5 justify-content-center">
+            <h1 class="col-auto">Looks like: </p>
+            <h1 class="text-info col-auto" id="guess"></p>
+          </div>
+          <div class="container row justify-content-between">
+            <h3 class="text-success " id="mastery">Mastered 0/10</h1>
+            <div class="d-none rightArrow btn btn-dark text-right text-success" id="rightArrow">Nice! Next word ></div>
+          </div>
+          <!-- <div class="col-12 col-md-auto">
             <canvas
               id="predictions"
               role="img"
@@ -59,10 +58,11 @@
               height="500"
               width="500"
             ></canvas>
-          </div>
+          </div> -->
         </div>
       </div>
     </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-tflite@0.0.1-alpha.8/dist/tf-tflite.min.js"></script>
 

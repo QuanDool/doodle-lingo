@@ -1,12 +1,22 @@
-const WIDTH = 500;
+const WIDTH = 1100;
 const HEIGHT = 500;
 const STROKE_WEIGHT = 3;
 const CROP_PADDING = (REPOS_PADDING = 2);
+const COLOR = "#ffffff"
+
+let english = ["moon","star","bucket","cup","door","moustache","mountain","stairs","tornado","potato","table","chair"];
+let level = [0,0,0,0,0,0,0,0,0,0,0,0];
+let english_word = "";
+let spanish = ["la luna","la estrella","el cubo","la taza","la puerta","el bigote","la montaña","las escalera","el tornado","la papa","la mesa","la silla"];
+let spanish_word = "";
+let word_index = 0;
+let mastery = 0;
 
 let model;
 let pieChart;
 let clicked = false;
 let mousePosition = [];
+let solved;
 
 // Coordinates of the current drawn stroke [[x1, x2, ..., xn], [y1, y2, ..., yn]]
 let strokePixels = [[], []];
@@ -22,7 +32,52 @@ function setup() {
 	createCanvas(WIDTH, HEIGHT);
 	strokeWeight(STROKE_WEIGHT);
 	stroke("black");
-	background("#FFFFFF");
+	background(COLOR);
+}
+
+// from https://stackoverflow.com/questions/1431094/how-do-i-replace-a-character-at-a-particular-index-in-javascript
+String.prototype.replaceAt = function(index, replacement) {
+    return this.substring(0, index) + replacement + this.substring(index + replacement.length);
+}
+
+function removeLetters(v, word) { //v=level
+	let l = word.length;
+	let n = Math.round(l*(v/2)) //level 0: 0, level 1: 1/2, level 2: 1. n=number of letters to remove
+	let u = [];
+	for (let i=0; i<n; i++) {
+		ind = Math.floor(Math.random()*l); //index to change
+		if (u.some((e)=>e==ind)) {
+			i--;
+		} else {
+			word = word.replaceAt(ind,"_");
+			u.push(ind);
+		}
+	}
+	return word;
+}
+
+function getNewWords() {
+	word_index = Math.floor(Math.random()*12);
+	english_word=english[word_index];
+	spanish_word=spanish[word_index];
+	english_word=removeLetters(level[word_index], english_word);
+}
+
+function modifyLevel(v) { // +1 if success /-1 if fail
+	if (v<0 && level[word_index]>0) {
+		level[word_index] -= 1;
+	}
+	if (v<0 && level[word_index]==3) {
+		level[word_index] -= 1;
+		mastery--;
+	}
+	
+	if (v>0 && level[word_index]<2) {
+		level[word_index] += 1;
+	} else if (level[word_index]==2) {
+		level[word_index] += 1;
+		mastery++;
+	}
 }
 
 function mouseDown() {
@@ -70,9 +125,9 @@ const preprocess = async (cb) => {
 		redirect: "follow",
 		referrerPolicy: "no-referrer",
 		body: JSON.stringify({
-			strokes: imageStrokes,
+			strokes: repositionImage(),
 			box: [min.x, min.y, max.x, max.y],
-		}),
+		}),	
 	}).then((response) => response.blob());
 
 	const img = new Image(28, 28);
@@ -150,13 +205,30 @@ const getMinimumCoordinates = () => {
 	return [Math.max(0, min_x), Math.max(0, min_y)];
 };
 
+// Reposition image to top left corner
+const repositionImage = () => {
+    const [min_x, min_y] = getMinimumCoordinates();
+    let newStroke = [[], []];
+    let repositionedImageStrokes = [];
+    for (const stroke of imageStrokes) {
+        newStroke = [[], []];
+        for (let i = 0; i < stroke[0].length; i++) {
+            newStroke[0].push(stroke[0][i] - min_x + REPOS_PADDING);
+            newStroke[1].push(stroke[1][i] - min_y + REPOS_PADDING);
+        }
+        repositionedImageStrokes.push(newStroke);
+    }
+    return repositionedImageStrokes;
+};
+
+
 const getBoundingBox = () => {
-	repositionImage();
+	const repositionedImage = repositionImage();
 
 	const coords_x = [];
 	const coords_y = [];
 
-	for (const stroke of imageStrokes) {
+	for (const stroke of repositionedImage) {
 		for (let i = 0; i < stroke[0].length; i++) {
 			coords_x.push(stroke[0][i]);
 			coords_y.push(stroke[1][i]);
@@ -197,16 +269,47 @@ const getBoundingBox = () => {
 	};
 };
 
-// Reposition image to top left corner
-const repositionImage = () => {
-	const [min_x, min_y] = getMinimumCoordinates();
-	for (const stroke of imageStrokes) {
-		for (let i = 0; i < stroke[0].length; i++) {
-			stroke[0][i] = stroke[0][i] - min_x + REPOS_PADDING;
-			stroke[1][i] = stroke[1][i] - min_y + REPOS_PADDING;
-		}
+function tryComplete(b) {
+	if (b) {
+		showNextWordButton();
+	}else {
+		hideNextWordButton();
 	}
-};
+}
+
+function showNextWordButton() {
+	const $rightArrow = document.getElementById("rightArrow");
+	$rightArrow.classList.remove("d-none");
+}
+
+function hideNextWordButton() {
+	const $rightArrow = document.getElementById("rightArrow");
+	$rightArrow.classList.add("d-none");
+}
+
+function nextWord() {
+	clearCanvas();
+	modifyLevel(1);
+	hideNextWordButton();
+	getNewWords();
+	setWords();
+}
+
+function skip() {
+	modifyLevel(-1);
+	clearCanvas();
+	getNewWords();
+	setWords();
+}
+
+function hint() {
+	if (level[word_index]>0) {
+		modifyLevel(-1);
+		english_word=english[word_index];
+		english_word=removeLetters(level[word_index], english_word);
+		setWords();
+	} 
+}
 
 const predict = async () => {
 	if (!imageStrokes.length) return;
@@ -223,24 +326,66 @@ const predict = async () => {
 			}))
 			.sort((a, b) => b.probability - a.probability)
 			.slice(0, 3);
+		
+		solved = top3.some((e)=>e.className==english[word_index]); 
+		tryComplete(solved);
+		setGuess(solved ? english[word_index] : top3[0].className);
 
 		drawPie(top3);
-		console.log(top3);
+		//console.log(level);
 	});
 };
 
 const clearCanvas = () => {
 	clear();
 	if (pieChart) pieChart.destroy();
-	background("#FFFFFF");
+	background(COLOR);
 	imageStrokes = [];
 	strokePixels = [[], []];
 };
 
+const setGuess = (word) => {
+	const $guess = document.getElementById("guess");
+	$guess.innerHTML = word;
+}
+
+const setWords = () => {
+	const $knownword = document.getElementById("knownword");
+	$knownword.innerHTML = english_word;
+	const $unknownword = document.getElementById("unknownword");
+	$unknownword.innerHTML = spanish_word;
+	const $mastery = document.getElementById("mastery");
+	$mastery.innerHTML = "Mastered: " + mastery + "/10";
+}
+
+const renderCanvas = () => {
+    for (const stroke of imageStrokes) {
+        for (let i = 0; i < stroke[0].length - 1; i++) {
+            line(stroke[0][i], stroke[1][i], stroke[0][i + 1], stroke[1][i + 1]);
+        }
+    }
+    console.log("Canvas rendered");
+};
+
+
+const undoStroke = () => {
+    imageStrokes.pop();
+    clear();
+	background(COLOR);
+    renderCanvas();
+}
+
 window.onload = () => {
-	const $submit = document.getElementById("predict");
+	getNewWords();
+	//const $submit = document.getElementById("predict");
 	const $clear = document.getElementById("clear");
 	const $canvas = document.getElementById("defaultCanvas0");
+	const $hint = document.getElementById("hint");
+	const $skip = document.getElementById("skip");
+	const $rightArrow = document.getElementById("rightArrow");
+	const $undo = document.getElementById("undo");
+	setWords();
+	
 
 	loadModel();
 	$canvas.addEventListener("mousedown", (e) => mouseDown(e));
@@ -249,6 +394,14 @@ window.onload = () => {
 	});
 	$canvas.addEventListener("mousemove", (e) => mouseMoved(e));
 
-	$submit.addEventListener("click", () => predict($canvas));
+	$hint.addEventListener("click", () => {hint()});
+	$skip.addEventListener("click", () => {skip()});
+	//$submit.addEventListener("click", () => predict($canvas));
 	$clear.addEventListener("click", clearCanvas);
+	$rightArrow.addEventListener("click", nextWord);
+	$undo.addEventListener("click", () => {
+		undoStroke();
+		predict($canvas);
+	});
 };
+
